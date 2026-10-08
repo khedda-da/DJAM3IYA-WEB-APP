@@ -9,14 +9,9 @@ import type {
   User,
 } from "@/types"
 
-// In browser or on Vercel deployment with rewrites, relative /api routes to backend
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined"
-    ? "/api"
-    : (typeof process !== "undefined" && process.env?.BACKEND_URL
-        ? `${process.env.BACKEND_URL}/api`
-        : "http://localhost:5000/api"))
+// Use the same-origin proxy in production so Vercel routes requests to the backend service.
+// VITE_API_URL remains available for local development or an explicitly separate API host.
+const API_BASE = import.meta.env.VITE_API_URL || "/api"
 
 class ApiClient {
   private token: string | null = null
