@@ -3,6 +3,8 @@ import cors from "cors"
 import morgan from "morgan"
 import { config } from "./config/env.js"
 import { errorHandler } from "./middleware/error.middleware.js"
+import { initializeSchema } from "./db/schema.js"
+import { seedDatabase } from "./db/seed.js"
 
 // Routers
 import authRoutes from "./modules/auth/auth.routes.js"
@@ -17,6 +19,18 @@ import notificationsRoutes from "./modules/notifications/notifications.routes.js
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js"
 import reportsRoutes from "./modules/reports/reports.routes.js"
 import auditRoutes from "./modules/audit/audit.routes.js"
+
+let dbReadyPromise: Promise<void> | null = null
+
+export function ensureDbReady(): Promise<void> {
+  if (!dbReadyPromise) {
+    dbReadyPromise = (async () => {
+      await initializeSchema()
+      await seedDatabase()
+    })()
+  }
+  return dbReadyPromise
+}
 
 export function createApp() {
   const app = express()
@@ -38,15 +52,27 @@ export function createApp() {
     app.use(morgan("dev"))
   }
 
-  // Health check endpoint
-  app.get("/health", (_req, res) => {
+  // Ensure DB schema and seeds are loaded (critical for serverless cold-starts on Vercel)
+  app.use(async (_req, _res, next) => {
+    try {
+      await ensureDbReady()
+      next()
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // Health check endpoints
+  const healthHandler = (_req: express.Request, res: express.Response) => {
     res.json({
       status: "healthy",
       service: "djam3iya-backend",
       version: "1.2.0",
       time: new Date().toISOString(),
     })
-  })
+  }
+  app.get("/health", healthHandler)
+  app.get("/api/health", healthHandler)
 
   // API Routes
   app.use("/api/auth", authRoutes)
@@ -75,3 +101,6 @@ export function createApp() {
 
   return app
 }
+
+export const app = createApp()
+export default app

@@ -1,6 +1,11 @@
-import type { Student, StudentFilters, Sheikh, Halaqa, Branch, Role, User, NotificationItem } from "@/types"
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+// In browser or on Vercel deployment with rewrites, relative /api routes to backend
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined"
+    ? "/api"
+    : (typeof process !== "undefined" && process.env?.BACKEND_URL
+        ? `${process.env.BACKEND_URL}/api`
+        : "http://localhost:5000/api"))
 
 class ApiClient {
   private token: string | null = null
