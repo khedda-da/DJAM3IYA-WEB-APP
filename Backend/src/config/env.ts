@@ -11,6 +11,12 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || "djam3ya_default_super_secret_key_2026",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   corsOrigin: process.env.CORS_ORIGIN || "*",
-  databaseUrl: process.env.DATABASE_URL || "",
+  // Vercel/Supabase provides POSTGRES_URL; keep DATABASE_URL for local deployments.
+  databaseUrl:
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    "",
   isProduction: process.env.NODE_ENV === "production",
 }
