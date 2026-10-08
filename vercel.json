@@ -1,47 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "backend": {
-      "root": "Backend",
-      "framework": "express"
-    },
-    "frontend": {
-      "root": "Frontend",
-      "framework": "vite",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "backend",
-          "format": "url",
-          "env": "BACKEND_URL"
-        }
-      ]
-    }
-  },
+  "installCommand": "npm install --prefix Frontend && npm install --prefix Backend",
+  "buildCommand": "npm run build --prefix Frontend",
+  "outputDirectory": "Frontend/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
-      "source": "/api",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
       "source": "/health",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/index.html"
     }
   ]
 }
