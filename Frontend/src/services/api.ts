@@ -1,3 +1,14 @@
+import type {
+  Branch,
+  Halaqa,
+  NotificationItem,
+  Role,
+  Sheikh,
+  Student,
+  StudentFilters,
+  User,
+} from "@/types"
+
 // In browser or on Vercel deployment with rewrites, relative /api routes to backend
 const API_BASE =
   import.meta.env.VITE_API_URL ||
