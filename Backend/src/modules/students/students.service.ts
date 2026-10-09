@@ -305,12 +305,15 @@ export class StudentsService {
     if (!personId) {
       const gender =
         dto.gender === "ذكر" ? "male" : dto.gender === "أنثى" ? "female" : dto.gender || "male"
+      if (!dto.phone?.trim() && !dto.email?.trim()) {
+        throw new AppError("يجب توفير رقم الهاتف أو البريد الإلكتروني على الأقل", 400)
+      }
       const res = await db.run(
         `INSERT INTO persons (full_name, phone, email, birth_date, gender, person_type)
          VALUES (?, ?, ?, ?, ?, 'student')`,
         [
           dto.name.trim(),
-          dto.phone?.trim() || "0550 00 00 00",
+          dto.phone?.trim() || null,
           dto.email?.trim() || null,
           dto.birth_date || "2010-01-01",
           gender,

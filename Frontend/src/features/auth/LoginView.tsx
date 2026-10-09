@@ -1,18 +1,27 @@
 import { useState } from "react"
 import { Icon, Button } from "@/components/ui"
+import { useAuth } from "@/services/AuthContext"
+import { errorMessage } from "@/services/api"
 
-export interface LoginViewProps {
-  onLogin: () => void
-}
-
-export function LoginView({ onLogin }: LoginViewProps) {
+export function LoginView() {
+  const { login } = useAuth()
   const [recovery, setRecovery] = useState(false)
-  const [username, setUsername] = useState("n.boualam")
-  const [password, setPassword] = useState("password")
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onLogin()
+    if (submitting) return
+    setError("")
+    setSubmitting(true)
+    try {
+      await login(username, password)
+    } catch (err) {
+      setError(errorMessage(err))
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -37,11 +46,13 @@ export function LoginView({ onLogin }: LoginViewProps) {
         </div>
         <form onSubmit={handleSubmit}>
           <label>
-            البريد الإلكتروني أو اسم المستخدم
+            اسم المستخدم
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="name@djam3ya.dz"
+              placeholder="مثال: n.boualam"
+              autoComplete="username"
+              dir="ltr"
               required
             />
           </label>
@@ -51,13 +62,21 @@ export function LoginView({ onLogin }: LoginViewProps) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               required
             />
           </label>
+          {error && (
+            <div className="info-alert" role="alert">
+              <Icon name="warning" />
+              <span>
+                <strong>تعذر تسجيل الدخول</strong>
+                <small>{error}</small>
+              </span>
+            </div>
+          )}
           <div className="login-options">
-            <label>
-              <input type="checkbox" defaultChecked /> تذكرني
-            </label>
+            <span />
             <button type="button" onClick={() => setRecovery(!recovery)}>
               نسيت كلمة المرور؟
             </button>
@@ -68,12 +87,15 @@ export function LoginView({ onLogin }: LoginViewProps) {
               <span>
                 <strong>استعادة الوصول</strong>
                 <small>
-                  أدخل اسم المستخدم ثم تواصل مع مدير النطاق لإرسال رابط آمن.
+                  تواصل مع المدير المركزي لإعادة ضبط كلمة المرور من صفحة حسابات
+                  المستخدمين.
                 </small>
               </span>
             </div>
           )}
-          <Button type="submit">تسجيل الدخول</Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
+          </Button>
         </form>
         <small className="secure-note">
           <Icon name="shield" size={16} /> دخول محمي. لا تشارك بيانات حسابك مع

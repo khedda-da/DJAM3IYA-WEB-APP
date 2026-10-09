@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react"
 import { Icon, Button, EmptyState } from "@/components/ui"
-import { notificationStore } from "@/services/store"
-import type { Screen, NotificationItem, IconName } from "@/types"
+import { useData } from "@/services/DataContext"
+import type { Screen, IconName } from "@/types"
+
+/** The API's "student" target has no id attached, so land on the list instead. */
+function resolveTarget(target: string): Screen {
+  return (target === "student" ? "students" : target) as Screen
+}
 
 export interface NotificationCenterViewProps {
   navigate: (screen: Screen) => void
@@ -10,15 +14,7 @@ export interface NotificationCenterViewProps {
 export function NotificationCenterView({
   navigate,
 }: NotificationCenterViewProps) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    notificationStore.getAll(),
-  )
-
-  useEffect(() => {
-    return notificationStore.subscribe(() => {
-      setNotifications(notificationStore.getAll())
-    })
-  }, [])
+  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useData()
 
   const getNotificationIcon = (target: string): IconName => {
     if (target === "student") return "school"
@@ -35,7 +31,7 @@ export function NotificationCenterView({
         </div>
         <Button
           variant="secondary"
-          onClick={() => notificationStore.markAllAsRead()}
+          onClick={() => void markAllNotificationsRead()}
         >
           تحديد الكل كمقروء
         </Button>
@@ -48,8 +44,8 @@ export function NotificationCenterView({
               className={item.read ? "" : "unread"}
               key={item.id}
               onClick={() => {
-                notificationStore.markAsRead(item.id)
-                navigate(item.targetScreen as Screen)
+                void markNotificationRead(item)
+                navigate(resolveTarget(item.targetScreen))
               }}
             >
               <span className="notification-icon">

@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui"
-import { notificationStore } from "@/services/store"
-import type { Screen, NotificationItem } from "@/types"
+import { useData } from "@/services/DataContext"
+import type { Screen } from "@/types"
+
+/** The API's "student" target has no id attached, so land on the list instead. */
+function resolveTarget(target: string): Screen {
+  return (target === "student" ? "students" : target) as Screen
+}
 
 export interface NotificationPopoverProps {
   onClose: () => void
@@ -14,17 +18,8 @@ export function NotificationPopover({
   onOpenCenter,
   navigate,
 }: NotificationPopoverProps) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    notificationStore.getAll(),
-  )
+  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useData()
 
-  useEffect(() => {
-    return notificationStore.subscribe(() => {
-      setNotifications(notificationStore.getAll())
-    })
-  }, [])
-
-  const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
     <div className="popover-layer" onClick={onClose}>
@@ -39,7 +34,7 @@ export function NotificationPopover({
           </div>
           <button
             className="text-action"
-            onClick={() => notificationStore.markAllAsRead()}
+            onClick={() => void markAllNotificationsRead()}
           >
             تحديد الكل كمقروء
           </button>
@@ -49,8 +44,8 @@ export function NotificationPopover({
             className={`notification ${item.read ? "" : "unread"}`}
             key={item.id}
             onClick={() => {
-              notificationStore.markAsRead(item.id)
-              navigate(item.targetScreen as Screen)
+              void markNotificationRead(item)
+              navigate(resolveTarget(item.targetScreen))
               onClose()
             }}
           >

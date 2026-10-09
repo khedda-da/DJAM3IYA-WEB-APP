@@ -1,67 +1,91 @@
 import { useState } from "react"
-import { Icon, Button, EmptyState } from "@/components/ui"
-import type { IconName } from "@/types"
+import { Icon, Button, EmptyState, LoadingState, ErrorState } from "@/components/ui"
+import { api, errorMessage } from "@/services/api"
+import type { ExportFormat } from "@/services/api"
+import { useAuth } from "@/services/AuthContext"
+import { levelLabel } from "@/utils/format"
+import type { IconName, ReportKey, ReportRow } from "@/types"
 
 export interface ReportsViewProps {
-  onExport: () => void
+  onMessage: (message: string) => void
 }
 
-function SkeletonRows() {
-  return (
-    <div className="skeleton-list" aria-label="جارٍ التحميل">
-      {[1, 2, 3].map((item) => (
-        <div key={item}>
-          <i />
-          <span>
-            <b />
-            <small />
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const availableReports = [
-  {
-    title: "الطلاب حسب المقر",
-    desc: "توزيع وأعداد الطلاب النشطين",
-    icon: "branch" as IconName,
-  },
-  {
-    title: "الطلاب حسب المستوى الدراسي",
-    desc: "ابتدائي، متوسط، ثانوي وجامعي",
-    icon: "school" as IconName,
-  },
-  {
-    title: "الطلاب حسب الحلقة",
-    desc: "الحلقات والشيوخ المرتبطون",
-    icon: "book" as IconName,
-  },
-  {
-    title: "الطلاب حسب الشيخ",
-    desc: "أعداد الطلاب حسب الشيخ والحلقة",
-    icon: "user" as IconName,
-  },
-  {
-    title: "إحصائيات التسجيل",
-    desc: "التسجيلات حسب الفترة الزمنية",
-    icon: "calendar" as IconName,
-  },
+const availableReports: { key: ReportKey; title: string; desc: string; icon: IconName; unit: string }[] = [
+  { key: "branch", title: "الطلاب حسب المقر", desc: "توزيع وأعداد الطلاب في كل مقر", icon: "branch", unit: "طالبا" },
+  { key: "level", title: "الطلاب حسب المستوى الدراسي", desc: "ابتدائي، متوسط، ثانوي وجامعي", icon: "school", unit: "طالبا" },
+  { key: "halaqa", title: "الطلاب حسب الحلقة", desc: "الحلقات والشيوخ المرتبطون", icon: "book", unit: "طالبا" },
+  { key: "sheikh", title: "الطلاب حسب الشيخ", desc: "أعداد الطلاب حسب الشيخ والحلقة", icon: "user", unit: "طالبا" },
+  { key: "trends", title: "إحصائيات التسجيل", desc: "التسجيلات حسب تاريخ التسجيل", icon: "calendar", unit: "تسجيلا" },
 ]
 
-export function ReportsView({ onExport }: ReportsViewProps) {
-  const [report, setReport] = useState("")
-  const [generated, setGenerated] = useState(false)
-  const [generating, setGenerating] = useState(false)
-
-  const generate = () => {
-    setGenerating(true)
-    setTimeout(() => {
-      setGenerating(false)
-      setGenerated(true)
-    }, 700)
+/** Normalise the different report payloads into label/value rows. */
+function toRows(key: ReportKey, data: Record<string, unknown>[]): ReportRow[] {
+  const str = (v: unknown) => (v == null ? "" : String(v))
+  switch (key) {
+    case "branch":
+      return data.map((d) => ({
+        label: str(d.branchName),
+        sublabel: str(d.location),
+        value: Number(d.studentCount),
+        extra: `${d.halaqaCount} حلقات`,
+      }))
+    case "level":
+      return data.map((d) => ({
+        label: levelLabel[str(d.level)] || str(d.level),
+        value: Number(d.studentCount),
+      }))
+    case "halaqa":
+      return data.map((d) => ({
+        label: str(d.halaqaName),
+        sublabel: `${str(d.branchName)} · ${str(d.sheikh)}`,
+        value: Number(d.studentCount),
+        extra: str(d.level),
+      }))
+    case "sheikh":
+      return data.map((d) => ({
+        label: str(d.sheikhName),
+        sublabel: str(d.phone),
+        value: Number(d.studentCount),
+        extra: `${d.halaqaCount} حلقات`,
+      }))
+    case "trends":
+      return data.map((d) => ({ label: str(d.date).slice(0, 10), value: Number(d.count) }))
   }
+}
+
+export function ReportsView({ onMessage }: ReportsViewProps) {
+  const { user } = useAuth()
+  const [active, setActive] = useState<(typeof availableReports)[number] | null>(null)
+  const [rows, setRows] = useState<ReportRow[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const generate = async (report: (typeof availableReports)[number]) => {
+    setActive(report)
+    setRows(null)
+    setError("")
+    setLoading(true)
+    try {
+      setRows(toRows(report.key, await api.getReport(report.key)))
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const exportAs = async (format: ExportFormat) => {
+    if (!active) return
+    try {
+      await api.exportReport(active.key, format)
+      onMessage("تم تنزيل الملف.")
+    } catch (err) {
+      onMessage(errorMessage(err))
+    }
+  }
+
+  const total = rows?.reduce((sum, r) => sum + r.value, 0) ?? 0
+  const max = Math.max(1, ...(rows ?? []).map((r) => r.value))
 
   return (
     <div className="page">
@@ -70,34 +94,27 @@ export function ReportsView({ onExport }: ReportsViewProps) {
           <div className="page-title">التقارير</div>
           <p>أنشئ تقارير دقيقة ضمن نطاق صلاحياتك.</p>
         </div>
-        <Button icon="download" onClick={() => setReport(availableReports[0].title)}>
-          تقرير جديد
-        </Button>
       </section>
 
       <div className="report-banner">
         <div>
           <Icon name="shield" />
           <span>
-            <strong>نطاق التصدير: كل المقرات</strong>
-            <small>لديك صلاحية التصدير المركزي.</small>
+            <strong>
+              نطاق التقرير: {user?.isCentral ? "كل المقرات" : user?.isBranchAdmin ? "مقرك" : "حلقاتك"}
+            </strong>
+            <small>
+              {user?.isCentral ? "لديك صلاحية التقارير المركزية." : "تُحدَّد البيانات بحسب صلاحياتك."}
+            </small>
           </span>
         </div>
-        <button onClick={() => setReport("الصلاحيات")}>مراجعة الصلاحيات</button>
       </div>
 
-      {!report ? (
+      {!active ? (
         <>
           <div className="report-grid">
             {availableReports.map((item) => (
-              <button
-                className="report-card"
-                key={item.title}
-                onClick={() => {
-                  setReport(item.title)
-                  setGenerated(false)
-                }}
-              >
+              <button className="report-card" key={item.key} onClick={() => void generate(item)}>
                 <span>
                   <Icon name={item.icon} />
                 </span>
@@ -112,77 +129,65 @@ export function ReportsView({ onExport }: ReportsViewProps) {
           <EmptyState
             icon="chart"
             title="لم يتم إنشاء تقرير بعد."
-            detail="اختر أحد التقارير أعلاه وحدد نطاق البيانات المطلوب."
+            detail="اختر أحد التقارير أعلاه لعرض البيانات الحالية."
           />
         </>
       ) : (
         <section className="report-builder">
           <div className="section-title">
             <div>
-              <strong>{report}</strong>
-              <small>حدّد الفلاتر ثم أنشئ التقرير.</small>
+              <strong>{active.title}</strong>
+              <small>{active.desc}</small>
             </div>
             <button
               onClick={() => {
-                setReport("")
-                setGenerated(false)
+                setActive(null)
+                setRows(null)
+                setError("")
               }}
             >
               اختيار تقرير آخر
             </button>
           </div>
-          <div className="form-grid">
-            <label>
-              المقر
-              <select>
-                <option>كل المقرات</option>
-                <option>المقر الثاني</option>
-              </select>
-            </label>
-            <label>
-              المستوى الدراسي
-              <select>
-                <option>كل المستويات</option>
-                <option>ثانوي</option>
-              </select>
-            </label>
-            <label>
-              من
-              <input type="date" />
-            </label>
-            <label>
-              إلى
-              <input type="date" />
-            </label>
-          </div>
-          <Button icon="chart" onClick={generate}>
-            {generating ? "جارٍ إنشاء التقرير..." : "إنشاء التقرير"}
-          </Button>
-          {generating && <SkeletonRows />}
-          {generated && (
+
+          {loading && <LoadingState rows={3} />}
+          {error && <ErrorState message={error} onRetry={() => void generate(active)} />}
+          {rows && rows.length === 0 && (
+            <EmptyState icon="chart" title="لا توجد بيانات." detail="لا توجد سجلات ضمن نطاقك لهذا التقرير." />
+          )}
+          {rows && rows.length > 0 && (
             <div className="report-result">
               <div className="success-mark">
                 <Icon name="check" />
               </div>
               <div>
                 <strong>تم إنشاء التقرير.</strong>
-                <small>يعرض 1,248 طالبا ضمن النطاق والفترة المحددين.</small>
+                <small>
+                  الإجمالي: {total.toLocaleString("en-US")} {active.unit} في {rows.length} صفوف.
+                </small>
               </div>
-              <div className="mini-chart">
-                {[82, 61, 46, 34].map((height, index) => (
-                  <i key={height} style={{ height: `${height}%` }}>
-                    <span>{["412", "368", "276", "192"][index]}</span>
-                  </i>
+              <div className="bar-chart" style={{ width: "100%" }}>
+                {rows.map((r) => (
+                  <div className="bar-row" key={`${r.label}-${r.sublabel ?? ""}`}>
+                    <span>
+                      {r.label}
+                      {r.sublabel ? <small> · {r.sublabel}</small> : null}
+                    </span>
+                    <div>
+                      <i style={{ width: `${Math.round((r.value / max) * 100)}%` }} />
+                    </div>
+                    <strong>{r.value}</strong>
+                  </div>
                 ))}
               </div>
               <div className="export-actions">
-                <Button variant="secondary" onClick={onExport}>
+                <Button variant="secondary" onClick={() => void exportAs("pdf")}>
                   PDF
                 </Button>
-                <Button variant="secondary" onClick={onExport}>
+                <Button variant="secondary" onClick={() => void exportAs("xlsx")}>
                   Excel
                 </Button>
-                <Button variant="secondary" onClick={onExport}>
+                <Button variant="secondary" onClick={() => void exportAs("csv")}>
                   CSV
                 </Button>
               </div>

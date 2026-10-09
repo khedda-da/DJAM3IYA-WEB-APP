@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
-import { Icon, IconButton, Button, Badge, EmptyState } from "@/components/ui"
-import { emptyStudentFilters } from "@/services/mockData"
+import { Icon, IconButton, Button, Badge, EmptyState, LoadingState, ErrorState } from "@/components/ui"
+import { emptyStudentFilters } from "@/services/constants"
+import { useData } from "@/services/DataContext"
 import type { Student, StudentFilters } from "@/types"
 
 export interface StudentsViewProps {
@@ -8,10 +9,10 @@ export interface StudentsViewProps {
   onProfile: (student: Student) => void
   onAdd: () => void
   onFilters: () => void
-  onExport: () => void
+  onExport: (count: number, query: string) => void
   filters: StudentFilters
   setFilters: (filters: StudentFilters) => void
-  onEdit: () => void
+  onBulkAssign: (students: Student[]) => void
   onDelete: (student: Student) => void
 }
 
@@ -23,9 +24,10 @@ export function StudentsView({
   onExport,
   filters,
   setFilters,
-  onEdit,
+  onBulkAssign,
   onDelete,
 }: StudentsViewProps) {
+  const data = useData()
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<string[]>([])
 
@@ -39,7 +41,7 @@ export function StudentsView({
         const matchesHalaqa =
           !filters.halaqa || student.halaqa === filters.halaqa
         const matchesSheikh =
-          !filters.sheikh || student.sheikh === filters.sheikh
+          !filters.sheikh || student.sheikh.includes(filters.sheikh)
         const matchesLevel = !filters.level || student.level === filters.level
         const matchesSchool =
           !filters.school || student.school.includes(filters.school)
@@ -100,10 +102,9 @@ export function StudentsView({
             <span className="filter-count">{active.length}</span>
           )}
         </Button>
-        <Button variant="secondary" icon="download" onClick={onExport}>
+        <Button variant="secondary" icon="download" onClick={() => onExport(filtered.length, query)}>
           تصدير
         </Button>
-        <IconButton icon="more" label="خيارات إضافية" onClick={onEdit} />
       </div>
 
       {active.length > 0 && (
@@ -132,13 +133,16 @@ export function StudentsView({
         <div className="bulk-bar">
           <strong>{selected.length} طلاب محددون</strong>
           <span>
-            <Button variant="secondary" icon="download" onClick={onExport}>
+            <Button variant="secondary" icon="download" onClick={() => onExport(filtered.length, query)}>
               تصدير
             </Button>
-            <Button variant="secondary" onClick={onEdit}>
-              نقل
-            </Button>
-            <Button variant="secondary" icon="book" onClick={onEdit}>
+            <Button
+              variant="secondary"
+              icon="book"
+              onClick={() =>
+                onBulkAssign(students.filter((student) => selected.includes(student.id)))
+              }
+            >
               تعيين حلقة
             </Button>
             <Button variant="ghost" onClick={() => setSelected([])}>
@@ -158,7 +162,11 @@ export function StudentsView({
           </button>
         </div>
 
-        {filtered.length === 0 ? (
+        {data.loading && students.length === 0 ? (
+          <LoadingState />
+        ) : data.errors.students ? (
+          <ErrorState message={data.errors.students} onRetry={() => void data.refresh(["students"])} />
+        ) : filtered.length === 0 ? (
           <EmptyState
             icon="school"
             title="لا يوجد طلاب مطابقون."
@@ -242,7 +250,7 @@ export function StudentsView({
                       <td onClick={(e) => e.stopPropagation()}>
                         <IconButton
                           icon="more"
-                          label={`خيارات ${student.name}`}
+                          label={`حذف ${student.name}`}
                           onClick={() => onDelete(student)}
                         />
                       </td>
