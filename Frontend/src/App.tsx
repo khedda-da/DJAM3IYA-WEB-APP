@@ -37,6 +37,7 @@ import { NotificationCenterView } from "@/features/notifications/NotificationCen
 import { SettingsView } from "@/features/settings"
 import { SearchOverlay } from "@/features/search"
 import { ReportsView } from "@/features/reports"
+import { SetupView } from "@/features/setup/SetupView"
 
 // Services
 import { entityContent } from "@/services/mockData"
@@ -106,6 +107,7 @@ const EMPTY_STUDENT_FILTERS: StudentFilters = {
 export default function App() {
   // Navigation
   const [screen, setScreen] = useState<Screen>("dashboard")
+  const isSetupPath = window.location.pathname.replace(/\/+$/, "") === "/setup"
   const [entityProfile, setEntityProfile] = useState<{
     type: EntityType
     name: string
@@ -193,6 +195,11 @@ export default function App() {
   useEffect(() => {
     return studentStore.subscribe(() => setStudents(studentStore.getAll()))
   }, [])
+
+  // ── First-user setup screen ────────────────────────────────────────────────
+
+  if (isSetupPath)
+    return <SetupView onComplete={() => window.history.pushState({}, "", "/")} />
 
   // ── Login screen ───────────────────────────────────────────────────────────
 

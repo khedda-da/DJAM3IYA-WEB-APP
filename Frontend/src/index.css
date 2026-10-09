@@ -92,6 +92,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 :root[data-theme="dark"] .page-number.current { color: #0c1914; }
 :root[data-theme="dark"] .login-brand { background: #176b54; }
 
+.setup-page { min-height: 100dvh; display: grid; place-items: center; padding: 28px 18px; background: radial-gradient(circle at 18% 0%, var(--primary-soft), transparent 34%), var(--canvas); }
+.setup-shell { width: min(100%, 480px); }
+.setup-brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 25px; text-align: right; }
+.setup-brand strong, .setup-brand small { display: block; }
+.setup-brand strong { font-size: 20px; }
+.setup-brand small { color: var(--muted); font-size: 10px; margin-top: 4px; }
+.setup-progress { height: 4px; overflow: hidden; border-radius: 99px; background: var(--border); margin-bottom: 14px; }
+.setup-progress-active { display: block; width: 100%; height: 100%; background: var(--primary); }
+.setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: clamp(24px, 6vw, 42px); text-align: right; }
+.setup-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: var(--primary-soft); color: var(--primary); margin-bottom: 20px; }
+.setup-card h1 { margin: 0; font-size: clamp(24px, 5vw, 30px); line-height: 1.3; }
+.setup-intro { margin: 10px 0 28px; color: var(--muted); line-height: 1.8; }
+.setup-form { display: flex; flex-direction: column; gap: 9px; }
+.setup-form label { font-size: 12px; font-weight: 700; margin-top: 6px; }
+.setup-form input, .setup-form select { width: 100%; min-height: 46px; border: 1px solid var(--border-strong); border-radius: 8px; padding: 0 13px; outline: 0; color: var(--ink); background: var(--surface); }
+.setup-form input:focus, .setup-form select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(23,107,84,.1); }
+.setup-form .btn { width: 100%; margin-top: 14px; }
+.setup-note { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; line-height: 1.7; margin: 22px 0 0; }
+
 .app { min-height: 100dvh; display: flex; }
 .app-main { min-width: 0; flex: 1; padding-right: 256px; }
 .sidebar { width: 256px; position: fixed; right: 0; top: 0; bottom: 0; z-index: 30; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 14px; }
