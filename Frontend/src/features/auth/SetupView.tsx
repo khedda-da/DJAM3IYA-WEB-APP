@@ -4,7 +4,7 @@ import { useAuth } from "@/services/AuthContext"
 import { errorMessage } from "@/services/api"
 
 export function SetupView() {
-  const { setup } = useAuth()
+  const { setup, logout } = useAuth()
   const [fullName, setFullName] = useState("")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
@@ -127,6 +127,16 @@ export function SetupView() {
           <Button type="submit" disabled={submitting}>
             {submitting ? "جارٍ الإنشاء..." : "إنشاء حساب المدير"}
           </Button>
+          <div style={{ textAlign: "center", marginTop: "1rem" }}>
+            <button
+              type="button"
+              className="text-link"
+              onClick={logout}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-primary, #1e40af)", fontSize: "0.9rem" }}
+            >
+              لديك حساب بالفعل؟ تسجيل الدخول
+            </button>
+          </div>
         </form>
         <small className="secure-note">
           <Icon name="shield" size={16} /> تظهر هذه الصفحة مرة واحدة فقط، قبل إنشاء أول حساب.

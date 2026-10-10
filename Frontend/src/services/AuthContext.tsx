@@ -17,6 +17,7 @@ interface AuthValue {
     phone?: string
   }) => Promise<void>
   logout: () => void
+  goToSetup: () => void
   /** Replace the cached user (e.g. after the profile was edited). */
   setUser: (user: AuthUser | null) => void
 }
@@ -30,11 +31,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore the session from the stored token on first load.
   useEffect(() => {
     let cancelled = false
+    const onSetupPath = window.location.pathname.replace(/\/+$/, "") === "/setup"
+
     const resolveAnon = () =>
       api
         .getSetupStatus()
-        .then((needsSetup) => !cancelled && setStatus(needsSetup ? "setup" : "anon"))
-        .catch(() => !cancelled && setStatus("anon"))
+        .then((needsSetup) => {
+          if (!cancelled) setStatus(needsSetup ? "setup" : onSetupPath ? "setup" : "anon")
+        })
+        .catch((err) => {
+          console.warn("[Auth] Failed to reach /auth/setup-status:", err)
+          if (!cancelled) setStatus(onSetupPath ? "setup" : "anon")
+        })
 
     if (!api.hasToken()) {
       void resolveAnon()
@@ -97,9 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("anon")
   }, [])
 
+  const goToSetup = useCallback(() => {
+    setStatus("setup")
+  }, [])
+
   const value = useMemo(
-    () => ({ user, status, login, setup, logout, setUser }),
-    [user, status, login, setup, logout],
+    () => ({ user, status, login, setup, logout, goToSetup, setUser }),
+    [user, status, login, setup, logout, goToSetup],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

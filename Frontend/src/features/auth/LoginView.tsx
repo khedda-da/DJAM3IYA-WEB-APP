@@ -4,7 +4,7 @@ import { useAuth } from "@/services/AuthContext"
 import { errorMessage } from "@/services/api"
 
 export function LoginView() {
-  const { login } = useAuth()
+  const { login, goToSetup } = useAuth()
   const [recovery, setRecovery] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -76,7 +76,14 @@ export function LoginView() {
             </div>
           )}
           <div className="login-options">
-            <span />
+            <button
+              type="button"
+              className="text-link"
+              onClick={goToSetup}
+              title="إذا كانت هذه أول مرة تقوم بتشغيل النظام وتريد إنشاء حساب المدير الأول"
+            >
+              إعداد النظام (أول استخدام)
+            </button>
             <button type="button" onClick={() => setRecovery(!recovery)}>
               نسيت كلمة المرور؟
             </button>

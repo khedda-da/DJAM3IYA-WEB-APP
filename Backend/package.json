@@ -11,6 +11,9 @@
     "seed": "tsx src/db/seed.ts",
     "test": "tsx tests/api.test.ts"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "keywords": ["quran", "association", "djam3iya", "management"],
   "author": "",
   "license": "ISC",
