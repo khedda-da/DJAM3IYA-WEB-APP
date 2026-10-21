@@ -15,6 +15,7 @@ interface AuthValue {
     password: string
     email?: string
     phone?: string
+    setupKey?: string
   }) => Promise<void>
   logout: () => void
   goToSetup: () => void
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string
       email?: string
       phone?: string
+      setupKey?: string
     }) => {
       const me = await api.setupFirstUser(input)
       setUser(me)

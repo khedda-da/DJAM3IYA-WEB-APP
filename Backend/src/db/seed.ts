@@ -24,7 +24,7 @@ async function seedRoles(): Promise<void> {
   const existingRoles = await db.query("SELECT COUNT(*) as count FROM roles")
   if (Number((existingRoles[0] as any)?.count ?? 0) > 0) return
   for (const r of ROLE_DEFINITIONS) {
-    await db.run("INSERT INTO roles (name, scope, is_active) VALUES (?, ?, 1)", [r.name, r.scope])
+    await db.run("INSERT INTO roles (name, scope) VALUES (?, ?)", [r.name, r.scope])
   }
 }
 
@@ -58,7 +58,7 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
   const branchIds: Record<string, number> = {}
   for (const b of branches) {
     const res = await db.run(
-      "INSERT INTO branches (name, location, phone, is_active) VALUES (?, ?, ?, 1)",
+      "INSERT INTO branches (name, location, phone) VALUES (?, ?, ?)",
       [b.name, b.location, b.phone],
     )
     branchIds[b.name] = res.lastInsertRowid
@@ -76,7 +76,7 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
   const halaqaIds: Record<string, number> = {}
   for (const h of halaqat) {
     const res = await db.run(
-      "INSERT INTO halaqat (name, level, branch_id, is_active) VALUES (?, ?, ?, 1)",
+      "INSERT INTO halaqat (name, level, branch_id) VALUES (?, ?, ?)",
       [h.name, h.level, branchIds[h.branch]],
     )
     halaqaIds[h.name] = res.lastInsertRowid
@@ -113,8 +113,8 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
 
     if (username) {
       await db.run(
-        `INSERT INTO users (person_id, username, password_hash, is_active)
-         VALUES (?, ?, ?, 1)`,
+        `INSERT INTO users (person_id, username, password_hash)
+         VALUES (?, ?, ?)`,
         [personId, username, passwordHash],
       )
     }

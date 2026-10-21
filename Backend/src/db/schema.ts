@@ -305,5 +305,22 @@ export async function initializeSchema(): Promise<void> {
     `)
   }
 
+  await migrateAuthColumns(isPg)
   console.log("[Database] Schema initialized successfully.")
+}
+
+/** Supabase Auth link on `users`. Idempotent; also upgrades databases created before Supabase Auth. */
+async function migrateAuthColumns(isPg: boolean): Promise<void> {
+  if (isPg) {
+    await db.exec(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_user_id VARCHAR(64);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_email VARCHAR(255);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_auth_user_id ON users(auth_user_id);
+    `)
+    return
+  }
+  const cols = (await db.query(`PRAGMA table_info(users)`)).map((c: any) => c.name)
+  if (!cols.includes("auth_user_id")) await db.exec(`ALTER TABLE users ADD COLUMN auth_user_id TEXT`)
+  if (!cols.includes("auth_email")) await db.exec(`ALTER TABLE users ADD COLUMN auth_email TEXT`)
+  await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_auth_user_id ON users(auth_user_id)`)
 }

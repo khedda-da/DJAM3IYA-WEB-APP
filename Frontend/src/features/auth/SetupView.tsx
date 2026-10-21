@@ -11,6 +11,7 @@ export function SetupView() {
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
+  const [setupKey, setSetupKey] = useState("")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
@@ -31,6 +32,7 @@ export function SetupView() {
         password,
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
+        setupKey: setupKey.trim() || undefined,
       })
     } catch (err) {
       setError(errorMessage(err))
@@ -52,6 +54,17 @@ export function SetupView() {
           <p>لا توجد حسابات بعد. أنشئ حساب المدير المركزي للمتابعة.</p>
         </div>
         <form onSubmit={handleSubmit}>
+          <label>
+            مفتاح الإعداد
+            <input
+              type="password"
+              value={setupKey}
+              onChange={(e) => setSetupKey(e.target.value)}
+              placeholder="SETUP_KEY المضبوط على الخادم"
+              autoComplete="off"
+              dir="ltr"
+            />
+          </label>
           <label>
             الاسم الكامل
             <input

@@ -37,7 +37,7 @@ export class NotificationsService {
 
   async getUnreadCount(userId: number): Promise<number> {
     const row = await db.get(
-      `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0`,
+      `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND CAST(is_read AS INTEGER) = 0`,
       [userId],
     )
     return Number(row?.count ?? 0)
@@ -45,7 +45,7 @@ export class NotificationsService {
 
   async markAsRead(notificationId: number, userId: number) {
     await db.run(
-      `UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?`,
+      `UPDATE notifications SET is_read = ${db.bool(true)} WHERE id = ? AND user_id = ?`,
       [notificationId, userId],
     )
     return { success: true }
@@ -53,7 +53,7 @@ export class NotificationsService {
 
   async markAllAsRead(userId: number) {
     await db.run(
-      `UPDATE notifications SET is_read = 1 WHERE user_id = ?`,
+      `UPDATE notifications SET is_read = ${db.bool(true)} WHERE user_id = ?`,
       [userId],
     )
     return { success: true }
@@ -61,11 +61,11 @@ export class NotificationsService {
 
   // N1: Broadcast notification to all active users
   async broadcast(title: string, body: string, senderUser?: AuthUser) {
-    const users = await db.query(`SELECT id FROM users WHERE is_active = 1`)
+    const users = await db.query(`SELECT id FROM users WHERE CAST(is_active AS INTEGER) = 1`)
     for (const u of users) {
       await db.run(
         `INSERT INTO notifications (user_id, title, body, type, is_read, related_entity_type)
-         VALUES (?, ?, ?, 'broadcast', 0, 'announcement')`,
+         VALUES (?, ?, ?, 'broadcast', ${db.bool(false)}, 'announcement')`,
         [u.id, title, body],
       )
     }

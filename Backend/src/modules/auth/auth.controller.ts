@@ -4,8 +4,8 @@ import { authService } from "./auth.service.js"
 export class AuthController {
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { username, password } = req.body
-      const result = await authService.login(username, password)
+      const { username, email, identifier, password } = req.body ?? {}
+      const result = await authService.login(identifier ?? username ?? email, password)
       res.json({
         success: true,
         message: "تم تسجيل الدخول بنجاح",
@@ -52,7 +52,18 @@ export class AuthController {
     }
   }
 
-  async logout(_req: Request, res: Response): Promise<void> {
+  async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.refresh(req.body?.refreshToken)
+      res.json({ success: true, data: result })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    const header = req.headers.authorization
+    await authService.logout(header?.startsWith("Bearer ") ? header.substring(7) : undefined)
     res.json({
       success: true,
       message: "تم تسجيل الخروج بنجاح",

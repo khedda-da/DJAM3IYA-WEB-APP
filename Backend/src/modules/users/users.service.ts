@@ -1,5 +1,6 @@
-import bcrypt from "bcryptjs"
 import { db } from "../../db/database.js"
+import { authService } from "../auth/auth.service.js"
+import { supabaseAdmin, authEmailFor } from "../../lib/supabase.js"
 import { AppError } from "../../middleware/error.middleware.js"
 import { logAudit } from "../../middleware/audit.middleware.js"
 import type { AuthUser } from "../../types/express.js"
@@ -138,19 +139,40 @@ export class UsersService {
       throw new AppError("هذا الشخص لديه حساب مستخدم بالفعل", 409)
     }
 
-    const password = dto.password?.trim() || "password"
-    const hash = await bcrypt.hash(password, 10)
+    const password = dto.password?.trim() || ""
+    if (password.length < 8) {
+      throw new AppError("كلمة المرور يجب أن لا تقل عن 8 أحرف", 400)
+    }
 
-    const res = await db.run(
-      `INSERT INTO users (person_id, username, password_hash, is_active)
-       VALUES (?, ?, ?, ?)`,
-      [
-        dto.person_id,
-        dto.username.trim(),
-        hash,
-        dto.is_active !== undefined ? (dto.is_active ? 1 : 0) : 1,
-      ],
-    )
+    const personRow = await db.get(`SELECT email FROM persons WHERE id = ?`, [dto.person_id])
+    const authEmail = authEmailFor(dto.username, (personRow as any)?.email)
+    const { data: created, error: authError } = await supabaseAdmin().auth.admin.createUser({
+      email: authEmail,
+      password,
+      email_confirm: true,
+      user_metadata: { username: dto.username.trim() },
+    })
+    if (authError || !created.user) {
+      throw new AppError(authError?.message || "تعذر إنشاء حساب المصادقة", 400)
+    }
+
+    let res
+    try {
+      res = await db.run(
+        `INSERT INTO users (person_id, username, password_hash, auth_user_id, auth_email, is_active)
+         VALUES (?, ?, '', ?, ?, ?)`,
+        [
+          dto.person_id,
+          dto.username.trim(),
+          created.user.id,
+          authEmail,
+          db.bool(dto.is_active !== undefined ? dto.is_active : true),
+        ],
+      )
+    } catch (err) {
+      await supabaseAdmin().auth.admin.deleteUser(created.user.id).catch(() => {})
+      throw err
+    }
 
     const userId = res.lastInsertRowid
 
@@ -177,20 +199,26 @@ export class UsersService {
     }
 
     const username = dto.username !== undefined ? dto.username.trim() : existing.username
-    const is_active = dto.is_active !== undefined ? (dto.is_active ? 1 : 0) : existing.is_active
+    const is_active = dto.is_active !== undefined ? dto.is_active : db.truthy(existing.is_active)
 
     if (dto.password && dto.password.trim()) {
-      const hash = await bcrypt.hash(dto.password.trim(), 10)
-      await db.run(
-        `UPDATE users SET username = ?, password_hash = ?, is_active = ? WHERE id = ?`,
-        [username, hash, is_active, id],
-      )
-    } else {
-      await db.run(
-        `UPDATE users SET username = ?, is_active = ? WHERE id = ?`,
-        [username, is_active, id],
-      )
+      if (dto.password.trim().length < 8) {
+        throw new AppError("كلمة المرور يجب أن لا تقل عن 8 أحرف", 400)
+      }
+      if (!existing.auth_user_id) {
+        await authService.linkToSupabase(id, username, null, dto.password.trim())
+      } else {
+        const { error } = await supabaseAdmin().auth.admin.updateUserById(existing.auth_user_id, {
+          password: dto.password.trim(),
+        })
+        if (error) throw new AppError(error.message, 400)
+      }
     }
+    await db.run(`UPDATE users SET username = ?, is_active = ? WHERE id = ?`, [
+      username,
+      db.bool(is_active),
+      id,
+    ])
 
     if (dto.role_id) {
       await db.run(`DELETE FROM person_roles WHERE person_id = ?`, [existing.person_id])
@@ -211,6 +239,11 @@ export class UsersService {
     }
 
     await db.run(`DELETE FROM users WHERE id = ?`, [id])
+    if (existing.auth_user_id) {
+      await supabaseAdmin().auth.admin.deleteUser(existing.auth_user_id).catch((e: unknown) => {
+        console.error("[Users] Failed to delete Supabase auth user", e)
+      })
+    }
     await logAudit("users", id, "DELETE", user?.id, existing, null)
     return { success: true }
   }

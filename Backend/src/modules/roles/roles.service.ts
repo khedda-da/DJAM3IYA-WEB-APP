@@ -73,7 +73,7 @@ export class RolesService {
     }
 
     const res = await db.run(
-      `INSERT INTO roles (name, scope, is_active) VALUES (?, ?, 1)`,
+      `INSERT INTO roles (name, scope) VALUES (?, ?)`,
       [name.trim(), scope],
     )
 

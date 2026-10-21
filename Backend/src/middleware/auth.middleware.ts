@@ -1,6 +1,5 @@
 import type { Request, Response, NextFunction } from "express"
-import jwt from "jsonwebtoken"
-import { config } from "../config/env.js"
+import { supabaseAdmin } from "../lib/supabase.js"
 import { db } from "../db/database.js"
 import type { AuthUser } from "../types/express.js"
 
@@ -13,7 +12,7 @@ export async function loadUserById(userId: number): Promise<AuthUser | null> {
     [userId],
   )
 
-  if (!userRow || !userRow.is_active) {
+  if (!userRow || !db.truthy(userRow.is_active)) {
     return null
   }
 
@@ -67,6 +66,14 @@ export async function loadUserById(userId: number): Promise<AuthUser | null> {
   }
 }
 
+/** Verify a Supabase access token and return the matching local user (or null). */
+export async function resolveUserFromToken(token: string): Promise<AuthUser | null> {
+  const { data, error } = await supabaseAdmin().auth.getUser(token)
+  if (error || !data.user) return null
+  const row = await db.get(`SELECT id FROM users WHERE auth_user_id = ?`, [data.user.id])
+  return row ? loadUserById(Number(row.id)) : null
+}
+
 export async function authMiddleware(
   req: Request,
   res: Response,
@@ -83,8 +90,7 @@ export async function authMiddleware(
 
   const token = authHeader.substring(7)
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as { userId: number }
-    const user = await loadUserById(decoded.userId)
+    const user = await resolveUserFromToken(token)
 
     if (!user) {
       res.status(401).json({
@@ -116,8 +122,7 @@ export async function optionalAuthMiddleware(
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7)
     try {
-      const decoded = jwt.verify(token, config.jwtSecret) as { userId: number }
-      const user = await loadUserById(decoded.userId)
+      const user = await resolveUserFromToken(token)
       if (user) {
         req.user = user
       }

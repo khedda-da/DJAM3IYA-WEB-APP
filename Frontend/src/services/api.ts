@@ -28,6 +28,7 @@ const API_BASE: string = (
 ).replace(/\/+$/, "")
 
 const TOKEN_KEY = "djam3ya_token"
+const REFRESH_KEY = "djam3ya_refresh_token"
 export const UNAUTHORIZED_EVENT = "djam3ya:unauthorized"
 
 export class ApiError extends Error {
@@ -84,8 +85,18 @@ function studentQuery(filters: StudentQuery, extra: Record<string, string> = {})
   return q.toString()
 }
 
+function readStoredRefresh(): string | null {
+  try {
+    return window.localStorage.getItem(REFRESH_KEY)
+  } catch {
+    return null
+  }
+}
+
 class ApiClient {
   private token: string | null = readStoredToken()
+  private refreshToken: string | null = readStoredRefresh()
+  private refreshing: Promise<boolean> | null = null
 
   // ── Token handling ────────────────────────────────────────────────────────
 
@@ -97,6 +108,46 @@ class ApiClient {
     } catch {
       /* storage unavailable – keep the in-memory token only */
     }
+  }
+
+  private setRefreshToken(token: string | null) {
+    this.refreshToken = token
+    try {
+      if (token) window.localStorage.setItem(REFRESH_KEY, token)
+      else window.localStorage.removeItem(REFRESH_KEY)
+    } catch {
+      /* storage unavailable */
+    }
+  }
+
+  private storeSession(session: { token: string; refreshToken?: string }) {
+    this.setToken(session.token)
+    this.setRefreshToken(session.refreshToken ?? null)
+  }
+
+  /** Exchange the refresh token for a new access token (Supabase tokens are short-lived). */
+  private refreshSession(): Promise<boolean> {
+    if (!this.refreshToken) return Promise.resolve(false)
+    if (!this.refreshing) {
+      this.refreshing = (async () => {
+        try {
+          const response = await fetch(`${API_BASE}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken: this.refreshToken }),
+          })
+          const body = await response.json().catch(() => null)
+          if (!response.ok || !body?.success) return false
+          this.storeSession(body.data)
+          return true
+        } catch {
+          return false
+        } finally {
+          this.refreshing = null
+        }
+      })()
+    }
+    return this.refreshing
   }
 
   getToken(): string | null {
@@ -117,14 +168,15 @@ class ApiClient {
 
   private expireSession() {
     this.setToken(null)
+    this.setRefreshToken(null)
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
   }
 
   private async request<T = unknown>(
     path: string,
-    options: RequestInit & { skipAuthRedirect?: boolean } = {},
+    options: RequestInit & { skipAuthRedirect?: boolean; _retried?: boolean } = {},
   ): Promise<Envelope<T>> {
-    const { skipAuthRedirect, ...init } = options
+    const { skipAuthRedirect, _retried, ...init } = options
     let response: Response
     try {
       response = await fetch(`${API_BASE}${path}`, {
@@ -154,7 +206,12 @@ class ApiClient {
     const body = await response.json().catch(() => null)
 
     if (!response.ok || (body && body.success === false)) {
-      if (response.status === 401 && !skipAuthRedirect && this.token) this.expireSession()
+      if (response.status === 401 && !skipAuthRedirect && this.token) {
+        if (!_retried && (await this.refreshSession())) {
+          return this.request<T>(path, { ...options, _retried: true })
+        }
+        this.expireSession()
+      }
       throw new ApiError(body?.message || "حدث خطأ في الاتصال بالخادم", response.status)
     }
 
@@ -177,6 +234,9 @@ class ApiClient {
     let response: Response
     try {
       response = await fetch(`${API_BASE}${path}`, { headers: this.authHeaders() })
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${API_BASE}${path}`, { headers: this.authHeaders() })
+      }
     } catch {
       throw new ApiError("تعذر الاتصال بالخادم أثناء التصدير.")
     }
@@ -195,12 +255,15 @@ class ApiClient {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   async login(username: string, password: string): Promise<AuthUser> {
-    const res = await this.request<{ token: string; user: AuthUser }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username: username.trim(), password }),
-      skipAuthRedirect: true,
-    })
-    this.setToken(res.data.token)
+    const res = await this.request<{ token: string; refreshToken?: string; user: AuthUser }>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ username: username.trim(), password }),
+        skipAuthRedirect: true,
+      },
+    )
+    this.storeSession(res.data)
     return res.data.user
   }
 
@@ -218,13 +281,17 @@ class ApiClient {
     password: string
     email?: string
     phone?: string
+    setupKey?: string
   }): Promise<AuthUser> {
-    const res = await this.request<{ token: string; user: AuthUser }>("/auth/setup", {
-      method: "POST",
-      body: JSON.stringify(input),
-      skipAuthRedirect: true,
-    })
-    this.setToken(res.data.token)
+    const res = await this.request<{ token: string; refreshToken?: string; user: AuthUser }>(
+      "/auth/setup",
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+        skipAuthRedirect: true,
+      },
+    )
+    this.storeSession(res.data)
     return res.data.user
   }
 
@@ -248,7 +315,15 @@ class ApiClient {
   }
 
   logout() {
+    // Tell Supabase to end the session (best effort), then drop the local tokens.
+    if (this.token) {
+      void fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: this.authHeaders({ "Content-Type": "application/json" }),
+      }).catch(() => {})
+    }
     this.setToken(null)
+    this.setRefreshToken(null)
   }
 
   // ── Students ──────────────────────────────────────────────────────────────

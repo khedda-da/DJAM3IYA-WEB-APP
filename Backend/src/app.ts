@@ -52,16 +52,6 @@ export function createApp() {
     app.use(morgan("dev"))
   }
 
-  // Ensure DB schema and seeds are loaded (critical for serverless cold-starts on Vercel)
-  app.use(async (_req, _res, next) => {
-    try {
-      await ensureDbReady()
-      next()
-    } catch (err) {
-      next(err)
-    }
-  })
-
   // Health check endpoints
   const healthHandler = (_req: express.Request, res: express.Response) => {
     res.json({

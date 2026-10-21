@@ -186,3 +186,14 @@ npm test
 
 ### 12. سجل النشاطات (`/api/audit`) — N2
 - `GET /api/audit`: استعراض التغييرات الإدارية السابقة ومن قام بها والقيم القديمة والجديدة.
+
+## Authentication (Supabase Auth)
+
+Authentication works like in LMCS: **Supabase Auth** stores the credentials, checks passwords and issues/refreshes the tokens. This API only maps a verified Supabase user to its local `users` row (roles, branch, halaqat).
+
+1. Create a Supabase project and copy `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and the Postgres `DATABASE_URL` into the backend environment (Vercel → Project → Environment Variables).
+2. Create the schema **once**, outside of any request: `DATABASE_URL=... npm run db:init` (the API no longer creates tables/seeds on every request).
+3. Set `SETUP_KEY`, open `/setup`, enter that key and create the first administrator.
+4. Accounts created before this change keep working: on their first login the old password hash is verified once and the account is moved into Supabase automatically.
+
+Endpoints: `POST /auth/login` (username **or** e-mail), `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`, `GET /auth/setup-status`, `POST /auth/setup`.

@@ -151,4 +151,8 @@ export const db = {
   run: (sql: string, params?: any[]) => getDatabase().run(sql, params),
   exec: (sql: string) => getDatabase().exec(sql),
   isPostgres: () => getDatabase().isPostgres,
+  /** Boolean column value: real boolean on PostgreSQL, 0/1 on SQLite. */
+  bool: (v: unknown): boolean | number => (getDatabase().isPostgres ? Boolean(v) : v ? 1 : 0),
+  /** Read a boolean column regardless of driver (true/false, 1/0, "1"). */
+  truthy: (v: unknown): boolean => v === true || v === 1 || v === "1" || v === "t" || v === "true",
 }
