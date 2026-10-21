@@ -8,13 +8,20 @@ import type { AuthUser } from "../../types/express.js"
 
 export class AuthService {
   async login(username: string, password: string): Promise<{ token: string; user: AuthUser }> {
-    if (!username || !password) {
+    // Validate the request before calling bcrypt. Malformed JSON or legacy rows
+    // must produce a normal auth response rather than an unhandled 500.
+    if (typeof username !== "string" || typeof password !== "string") {
+      throw new AppError("يرجى إدخال اسم المستخدم وكلمة المرور", 400)
+    }
+
+    const normalizedUsername = username.trim()
+    if (!normalizedUsername || !password) {
       throw new AppError("يرجى إدخال اسم المستخدم وكلمة المرور", 400)
     }
 
     const userRow = await db.get(
       `SELECT id, username, password_hash, is_active FROM users WHERE username = ?`,
-      [username.trim()],
+      [normalizedUsername],
     )
 
     if (!userRow) {
