@@ -24,7 +24,7 @@ async function seedRoles(): Promise<void> {
   const existingRoles = await db.query("SELECT COUNT(*) as count FROM roles")
   if (Number((existingRoles[0] as any)?.count ?? 0) > 0) return
   for (const r of ROLE_DEFINITIONS) {
-    await db.run("INSERT INTO roles (name, scope, is_active) VALUES (?, ?, 1)", [r.name, r.scope])
+    await db.run("INSERT INTO roles (name, scope, is_active) VALUES (?, ?, TRUE)", [r.name, r.scope])
   }
 }
 

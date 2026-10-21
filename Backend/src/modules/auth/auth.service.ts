@@ -101,7 +101,7 @@ export class AuthService {
     const adminRoleName = "مسؤول الإدارة"
     let role = await db.get(`SELECT id FROM roles WHERE name = ?`, [adminRoleName])
     if (!role) {
-      await db.run(`INSERT INTO roles (name, scope, is_active) VALUES (?, 'central', 1)`, [
+      await db.run(`INSERT INTO roles (name, scope, is_active) VALUES (?, 'central', TRUE)`, [
         adminRoleName,
       ])
       role = await db.get(`SELECT id FROM roles WHERE name = ?`, [adminRoleName])
