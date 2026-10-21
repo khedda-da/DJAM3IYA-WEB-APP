@@ -1,0 +1,9 @@
+{
+  "name": "djam3iya-web-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Djam3iya Quran association management app",
+  "scripts": {
+    "build": "npm --prefix Backend run build && npm --prefix Frontend run build"
+  }
+}
