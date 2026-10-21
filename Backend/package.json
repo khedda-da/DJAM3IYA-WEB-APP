@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "description": "Backend API for Quranic Association Management System (جمعية تحفيظ القرآن الكريم)",
   "main": "dist/server.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",

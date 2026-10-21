@@ -1,11 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 import { DatabaseSync } from "node:sqlite"
 import pg from "pg"
 import { config } from "../config/env.js"
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const backendRoot = process.cwd()
 
 export interface DbResult {
   lastInsertRowid: number
@@ -137,7 +136,7 @@ export function getDatabase(): IDatabase {
       const isVercel = Boolean(process.env.VERCEL)
       const dbPath = isVercel
         ? path.resolve("/tmp/quran_association.db")
-        : path.resolve(__dirname, "../../data/quran_association.db")
+        : path.resolve(backendRoot, "data/quran_association.db")
       console.log(`[Database] Using SQLite at: ${dbPath}`)
       dbInstance = new SqliteDatabase(dbPath)
     }
