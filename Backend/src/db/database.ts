@@ -1,7 +1,8 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { DatabaseSync } from "node:sqlite"
+import { createRequire } from "node:module"
+import type { DatabaseSync as DatabaseSyncType } from "node:sqlite"
 import pg from "pg"
 import { config } from "../config/env.js"
 
@@ -22,7 +23,7 @@ export interface IDatabase {
 }
 
 class SqliteDatabase implements IDatabase {
-  private db: DatabaseSync
+  private db: DatabaseSyncType
   public isPostgres = false
 
   constructor(filePath: string) {
@@ -30,6 +31,9 @@ class SqliteDatabase implements IDatabase {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
+    // Loaded lazily: PostgreSQL deployments (Vercel) must never touch node:sqlite,
+    // which does not exist on older Node versions and would crash the whole function on import.
+    const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite")
     this.db = new DatabaseSync(filePath)
     this.db.exec("PRAGMA foreign_keys = ON;")
     this.db.exec("PRAGMA journal_mode = WAL;")
