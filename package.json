@@ -1,0 +1,18 @@
+{
+  "name": "djam3iya-web-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Runtime dependency manifest for the Vercel multi-service deployment",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "morgan": "^1.12.1",
+    "pdfkit": "^0.20.2",
+    "pg": "^8.23.1",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.5"
+  }
+}
