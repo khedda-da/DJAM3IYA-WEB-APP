@@ -1,0 +1,9 @@
+{
+  "name": "djam3iya-web-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "Backend",
+    "Frontend"
+  ]
+}
