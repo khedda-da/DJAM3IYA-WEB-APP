@@ -15,7 +15,12 @@ export const config = {
   // Domain used for the Supabase login e-mail of accounts that have no real e-mail.
   authEmailDomain: process.env.AUTH_EMAIL_DOMAIN || "users.djam3iya.local",
   corsOrigin: process.env.CORS_ORIGIN || "*",
-  databaseUrl: process.env.DATABASE_URL || "",
+  databaseUrl:
+    process.env.DATABASE_URL ||
+    process.env.DJAM3IYA_POSTGRES_URL ||
+    process.env.DJAM3IYA_POSTGRES_PRISMA_URL ||
+    process.env.DJAM3IYA_POSTGRES_URL_NON_POOLING ||
+    "",
   seedDemoData: process.env.SEED_DEMO_DATA === "true",
   isProduction: process.env.NODE_ENV === "production",
 }

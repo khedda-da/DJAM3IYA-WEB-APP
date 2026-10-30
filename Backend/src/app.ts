@@ -52,6 +52,16 @@ export function createApp() {
     app.use(morgan("dev"))
   }
 
+  // Vercel does not run startServer(), so initialize the database before handling requests.
+  app.use(async (_req, _res, next) => {
+    try {
+      await ensureDbReady()
+      next()
+    } catch (error) {
+      next(error)
+    }
+  })
+
   // Health check endpoints
   const healthHandler = (_req: express.Request, res: express.Response) => {
     res.json({
