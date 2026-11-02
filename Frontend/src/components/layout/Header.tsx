@@ -8,7 +8,6 @@ export interface HeaderProps {
   onLanguage: () => void
   darkMode: boolean
   onThemeToggle: () => void
-  unreadCount: number
 }
 
 export function Header({
@@ -19,7 +18,6 @@ export function Header({
   onLanguage,
   darkMode,
   onThemeToggle,
-  unreadCount,
 }: HeaderProps) {
   return (
     <header className="topbar">
@@ -50,9 +48,9 @@ export function Header({
         />
         <IconButton
           icon="bell"
-          label={`الإشعارات، ${unreadCount} غير مقروءة`}
+          label="الإشعارات، 3 غير مقروءة"
           onClick={onNotifications}
-          active={unreadCount > 0}
+          active
         />
       </div>
     </header>

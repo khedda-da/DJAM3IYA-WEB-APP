@@ -1,13 +1,10 @@
 import { Icon, IconButton, Button, Badge } from "@/components/ui"
-import { api } from "@/services/api"
-import { useAsync } from "@/services/useAsync"
-import type { Student, Screen, EntityType } from "@/types"
+import type { Student, Screen } from "@/types"
 
 export interface StudentProfileProps {
   student?: Student
   goBack: () => void
   navigate: (s: Screen) => void
-  onOpenEntity: (type: EntityType, id: string, name: string) => void
   onEdit: () => void
   onExport: () => void
   onAssign: () => void
@@ -18,20 +15,11 @@ export function StudentProfile({
   student,
   goBack,
   navigate,
-  onOpenEntity,
   onEdit,
   onExport,
   onAssign,
   onDelete,
 }: StudentProfileProps) {
-  const audit = useAsync(
-    () => (student?.studentId ? api.getAudit(300) : Promise.resolve([])),
-    [student?.studentId],
-  )
-  const recent = (audit.data ?? [])
-    .filter((e) => e.tableName === "students" && e.recordId === student?.studentId)
-    .slice(0, 3)
-
   if (!student) {
     return (
       <div className="page profile-page">
@@ -90,19 +78,19 @@ export function StudentProfile({
             <div className="details-grid">
               <div>
                 <small>تاريخ الميلاد</small>
-                <strong>{student.birthDate || "—"}</strong>
+                <strong>{student.birthDate || "14 مارس 2009"}</strong>
               </div>
               <div>
                 <small>الجنس</small>
-                <strong>{student.gender || "—"}</strong>
+                <strong>{student.gender || "ذكر"}</strong>
               </div>
               <div>
                 <small>الهاتف</small>
-                <strong dir="ltr">{student.phone || "—"}</strong>
+                <strong dir="ltr">{student.phone || "0556 43 28 19"}</strong>
               </div>
               <div>
                 <small>البريد الإلكتروني</small>
-                <strong dir="ltr">{student.email || "—"}</strong>
+                <strong dir="ltr">{student.email || "mohamed.amine@email.dz"}</strong>
               </div>
             </div>
           </section>
@@ -130,7 +118,7 @@ export function StudentProfile({
               </Button>
             </div>
             <div className="relationship-flow">
-              <button onClick={() => undefined} disabled>
+              <button onClick={() => navigate("student")}>
                 <span className="relation-icon">
                   <Icon name="school" />
                 </span>
@@ -138,10 +126,7 @@ export function StudentProfile({
                 <strong>{student.name.split(" ")[0]}</strong>
               </button>
               <Icon name="chevron" />
-              <button
-                disabled={!student.halaqaId}
-                onClick={() => student.halaqaId && onOpenEntity("halaqat", String(student.halaqaId), student.halaqa)}
-              >
+              <button onClick={() => navigate("halaqat")}>
                 <span className="relation-icon">
                   <Icon name="book" />
                 </span>
@@ -149,10 +134,7 @@ export function StudentProfile({
                 <strong>{student.halaqa}</strong>
               </button>
               <Icon name="chevron" />
-              <button
-                disabled={!student.sheikhId}
-                onClick={() => student.sheikhId && onOpenEntity("sheikhs", String(student.sheikhId), student.sheikh)}
-              >
+              <button onClick={() => navigate("sheikhs")}>
                 <span className="relation-icon">
                   <Icon name="user" />
                 </span>
@@ -160,16 +142,21 @@ export function StudentProfile({
                 <strong>{student.sheikh}</strong>
               </button>
               <Icon name="chevron" />
-              <button
-                disabled={!student.branchId}
-                onClick={() => student.branchId && onOpenEntity("branches", String(student.branchId), student.branch)}
-              >
+              <button onClick={() => navigate("branches")}>
                 <span className="relation-icon">
                   <Icon name="branch" />
                 </span>
                 <small>المقر</small>
                 <strong>{student.branch}</strong>
               </button>
+            </div>
+            <div className="relationship-note">
+              <Icon name="check" />
+              <span>
+                <strong>عضوية إضافية</strong>
+                <small>حلقة ابن الجزري · المقر الثالث · كل يوم جمعة</small>
+              </span>
+              <button onClick={() => navigate("halaqat")}>عرض الحلقة</button>
             </div>
           </section>
         </main>
@@ -188,29 +175,25 @@ export function StudentProfile({
             </div>
             <div>
               <span>عدد الحلقات</span>
-              <b>{student.halaqaId ? 1 : 0}</b>
+              <b>2</b>
             </div>
           </div>
           <div className="aside-block">
             <strong>آخر نشاط</strong>
-            {recent.length === 0 && (
-              <div className="mini-activity">
-                <i />
-                <span>
-                  <b>لا يوجد نشاط مسجّل</b>
-                  <small>{audit.error ? "سجل النشاط متاح للمدير المركزي" : "لم تُسجَّل تغييرات بعد"}</small>
-                </span>
-              </div>
-            )}
-            {recent.map((entry) => (
-              <div className="mini-activity" key={entry.id}>
-                <i />
-                <span>
-                  <b>{entry.actionLabel} {entry.tableLabel}</b>
-                  <small>{entry.timestamp} · بواسطة {entry.user}</small>
-                </span>
-              </div>
-            ))}
+            <div className="mini-activity">
+              <i />
+              <span>
+                <b>تم تحديث المستوى الدراسي</b>
+                <small>منذ يومين · بواسطة نبيل</small>
+              </span>
+            </div>
+            <div className="mini-activity">
+              <i />
+              <span>
+                <b>أضيف إلى {student.halaqa}</b>
+                <small>منذ 12 يوما</small>
+              </span>
+            </div>
             <button
               className="text-action"
               onClick={() => navigate("activity")}

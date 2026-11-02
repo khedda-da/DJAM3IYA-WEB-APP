@@ -1,81 +1,65 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Icon, EmptyState } from "@/components/ui"
-import { useData } from "@/services/DataContext"
-import type { EntityType, IconName, Student } from "@/types"
-
-export type SearchPick =
-  | { kind: "student"; student: Student }
-  | { kind: "entity"; type: EntityType; id: string; name: string }
+import type { Screen, IconName } from "@/types"
 
 export interface SearchOverlayProps {
   onClose: () => void
-  onPick: (pick: SearchPick) => void
+  navigate: (s: Screen) => void
 }
 
 interface SearchResult {
-  key: string
   title: string
   subtitle: string
   icon: IconName
+  screen: Screen
   category: string
-  pick: SearchPick
 }
 
-export function SearchOverlay({ onClose, onPick }: SearchOverlayProps) {
-  const { students, sheikhs, halaqat, branches, users } = useData()
-  const dataset: SearchResult[] = useMemo(
-    () => [
-      ...students.map<SearchResult>((st) => ({
-        key: `student-${st.id}`,
-        title: st.name,
-        subtitle: `${st.id} · ${st.branch} · ${st.halaqa}`,
-        icon: "school",
-        category: "الطلاب",
-        pick: { kind: "student", student: st },
-      })),
-      ...sheikhs.map<SearchResult>((sh) => ({
-        key: `sheikh-${sh.personId}`,
-        title: sh.name,
-        subtitle: `شيخ · ${sh.halaqat.join("، ") || "بدون حلقات"}`,
-        icon: "user",
-        category: "الشيوخ",
-        pick: { kind: "entity", type: "sheikhs", id: String(sh.personId), name: sh.name },
-      })),
-      ...halaqat.map<SearchResult>((h) => ({
-        key: `halaqa-${h.id}`,
-        title: h.name,
-        subtitle: `${h.studentCount} طالبا · ${h.branch}`,
-        icon: "book",
-        category: "الحلقات",
-        pick: { kind: "entity", type: "halaqat", id: String(h.id), name: h.name },
-      })),
-      ...branches.map<SearchResult>((b) => ({
-        key: `branch-${b.id}`,
-        title: b.name,
-        subtitle: `${b.location || "—"} · ${b.studentCount} طالبا`,
-        icon: "branch",
-        category: "المقرات",
-        pick: { kind: "entity", type: "branches", id: String(b.id), name: b.name },
-      })),
-      ...users.map<SearchResult>((u) => ({
-        key: `user-${u.userId}`,
-        title: u.name,
-        subtitle: `${u.role} · ${u.username}`,
-        icon: "userCog",
-        category: "المستخدمون",
-        pick: { kind: "entity", type: "users", id: String(u.userId), name: u.name },
-      })),
-    ],
-    [students, sheikhs, halaqat, branches, users],
-  )
+const searchDataset: SearchResult[] = [
+  {
+    title: "محمد أمين بن علي",
+    subtitle: "المقر الثاني · حلقة الإمام مالك",
+    icon: "school",
+    screen: "student",
+    category: "الطلاب",
+  },
+  {
+    title: "الشيخ محمد",
+    subtitle: "شيخ · حلقة النووي",
+    icon: "user",
+    screen: "sheikhs",
+    category: "الشيوخ",
+  },
+  {
+    title: "حلقة الإمام مالك",
+    subtitle: "32 طالبا · المقر الثاني",
+    icon: "book",
+    screen: "halaqat",
+    category: "الحلقات",
+  },
+  {
+    title: "المقر الثاني",
+    subtitle: "وهران · 368 طالبا",
+    icon: "branch",
+    screen: "branches",
+    category: "المقرات",
+  },
+  {
+    title: "نبيل بوعلام",
+    subtitle: "مدير مركزي",
+    icon: "userCog",
+    screen: "users",
+    category: "المستخدمون",
+  },
+]
 
+export function SearchOverlay({ onClose, navigate }: SearchOverlayProps) {
   const [query, setQuery] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
 
-  const filtered = (query.trim()
-    ? dataset.filter((item) => `${item.title} ${item.subtitle}`.includes(query.trim()))
-    : dataset
-  ).slice(0, 30)
+  const filtered = searchDataset.filter((item) =>
+    `${item.title} ${item.subtitle} ${item.category}`.includes(query),
+  )
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
@@ -86,7 +70,7 @@ export function SearchOverlay({ onClose, onPick }: SearchOverlayProps) {
       setSelectedIndex((prev) => (filtered.length ? (prev - 1 + filtered.length) % filtered.length : 0))
     } else if (e.key === "Enter" && filtered[selectedIndex]) {
       e.preventDefault()
-      onPick(filtered[selectedIndex].pick)
+      navigate(filtered[selectedIndex].screen)
       onClose()
     } else if (e.key === "Escape") {
       onClose()
@@ -119,7 +103,7 @@ export function SearchOverlay({ onClose, onPick }: SearchOverlayProps) {
         <div className="command-results">
           {filtered.length ? (
             filtered.map((item, index) => (
-              <div className="result-group" key={item.key}>
+              <div className="result-group" key={item.title}>
                 {(index === 0 || filtered[index - 1].category !== item.category) && (
                   <small className="result-label">{item.category}</small>
                 )}
@@ -131,7 +115,7 @@ export function SearchOverlay({ onClose, onPick }: SearchOverlayProps) {
                       : undefined
                   }
                   onClick={() => {
-                    onPick(item.pick)
+                    navigate(item.screen)
                     onClose()
                   }}
                   onMouseEnter={() => setSelectedIndex(index)}

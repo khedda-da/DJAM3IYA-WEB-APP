@@ -1,7 +1,5 @@
 import { useState } from "react"
 import { IconButton } from "@/components/ui"
-import { useData } from "@/services/DataContext"
-import { LEVELS } from "@/services/constants"
 import type { StudentFilters } from "@/types"
 
 export interface StudentFilterDrawerProps {
@@ -15,7 +13,6 @@ export function StudentFilterDrawer({
   onClose,
   onApply,
 }: StudentFilterDrawerProps) {
-  const { branches, halaqat, sheikhs } = useData()
   const [draft, setDraft] = useState(value)
   const update = (key: keyof StudentFilters, val: string) =>
     setDraft({ ...draft, [key]: val })
@@ -39,9 +36,9 @@ export function StudentFilterDrawer({
               onChange={(e) => update("branch", e.target.value)}
             >
               <option value="">كل المقرات</option>
-              {branches.map((b) => (
-                <option key={b.id}>{b.name}</option>
-              ))}
+              <option>المقر الثاني</option>
+              <option>المقر الأول</option>
+              <option>المقر الثالث</option>
             </select>
           </label>
           <label>
@@ -51,9 +48,9 @@ export function StudentFilterDrawer({
               onChange={(e) => update("halaqa", e.target.value)}
             >
               <option value="">كل الحلقات</option>
-              {halaqat.map((h) => (
-                <option key={h.id}>{h.name}</option>
-              ))}
+              <option>حلقة الإمام مالك</option>
+              <option>حلقة البخاري</option>
+              <option>حلقة النووي</option>
             </select>
           </label>
           <label>
@@ -63,9 +60,9 @@ export function StudentFilterDrawer({
               onChange={(e) => update("sheikh", e.target.value)}
             >
               <option value="">كل الشيوخ</option>
-              {sheikhs.map((s) => (
-                <option key={s.personId}>{s.name}</option>
-              ))}
+              <option>الشيخ أحمد</option>
+              <option>الشيخ ياسين</option>
+              <option>الشيخ محمد</option>
             </select>
           </label>
           <label>
@@ -75,9 +72,10 @@ export function StudentFilterDrawer({
               onChange={(e) => update("level", e.target.value)}
             >
               <option value="">كل المستويات</option>
-              {LEVELS.map((level) => (
-                <option key={level}>{level}</option>
-              ))}
+              <option>ابتدائي</option>
+              <option>متوسط</option>
+              <option>ثانوي</option>
+              <option>جامعي</option>
             </select>
           </label>
           <label>

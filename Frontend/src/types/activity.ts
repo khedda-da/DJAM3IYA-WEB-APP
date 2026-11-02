@@ -1,12 +1,8 @@
 export interface ActivityItem {
-  id: string | number
+  id: string
   userName: string
   action: string
   target: string
-  meta: string
+  branch: string
   timeAgo: string
-  /** Raw audit info (only present for records coming from /audit) */
-  tableName?: string
-  recordId?: number | null
-  actionType?: "CREATE" | "UPDATE" | "DELETE" | string
 }

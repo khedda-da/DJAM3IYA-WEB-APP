@@ -1,36 +1,18 @@
-export interface HalaqaTeacher {
-  id: number
-  name: string
-  phone?: string
-}
-
 export interface Halaqa {
-  id: number
+  id: string
   name: string
   branch: string
-  branchId: number
   sheikh: string
-  sheikhs: string[]
-  teacherDetails: HalaqaTeacher[]
-  level: string
+  level: "ابتدائي" | "متوسط" | "ثانوي" | "جامعي"
   studentCount: number
   status: "نشط" | "متوقف"
-  isActive: boolean
+  description?: string
 }
 
 export interface HalaqaRecord {
-  id: number | string
   name: string
   branch: string
   sheikh: string
   level: string
   students: number
-}
-
-export interface HalaqaInput {
-  name: string
-  level?: string
-  branchId: number
-  isActive?: boolean
-  teacherIds?: number[]
 }

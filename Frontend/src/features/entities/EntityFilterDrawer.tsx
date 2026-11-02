@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { IconButton } from "@/components/ui"
-import { entityMeta, LEVELS } from "@/services/constants"
-import { useData } from "@/services/DataContext"
+import { entityContent } from "@/services/mockData"
 import type { EntityType, EntityFilters } from "@/types"
 
 export interface EntityFilterDrawerProps {
@@ -11,12 +10,18 @@ export interface EntityFilterDrawerProps {
   onApply: (filters: EntityFilters) => void
 }
 
-export function EntityFilterDrawer({ type, value, onClose, onApply }: EntityFilterDrawerProps) {
-  const { branches, halaqat, sheikhs } = useData()
+export function EntityFilterDrawer({
+  type,
+  value,
+  onClose,
+  onApply,
+}: EntityFilterDrawerProps) {
   const [draft, setDraft] = useState(value)
-  const update = (key: keyof EntityFilters, val: string) => setDraft({ ...draft, [key]: val })
-  const isSheikh = type === "sheikhs"
-  const isHalaqa = type === "halaqat"
+  const update = (key: keyof EntityFilters, val: string) =>
+    setDraft({ ...draft, [key]: val })
+  const isSheikh = type === "sheikhs",
+    isHalaqa = type === "halaqat",
+    isBranch = type === "branches"
 
   return (
     <div className="drawer-layer">
@@ -24,7 +29,7 @@ export function EntityFilterDrawer({ type, value, onClose, onApply }: EntityFilt
       <aside className="filter-drawer">
         <div className="drawer-head">
           <div>
-            <strong>تصفية {entityMeta[type].title}</strong>
+            <strong>تصفية {entityContent[type].title}</strong>
             <small>اجمع بين عدة فلاتر لدقة أكبر</small>
           </div>
           <IconButton icon="close" label="إغلاق" onClick={onClose} />
@@ -33,22 +38,28 @@ export function EntityFilterDrawer({ type, value, onClose, onApply }: EntityFilt
           {(isSheikh || isHalaqa) && (
             <label>
               المقر
-              <select value={draft.branch} onChange={(e) => update("branch", e.target.value)}>
+              <select
+                value={draft.branch}
+                onChange={(event) => update("branch", event.target.value)}
+              >
                 <option value="">كل المقرات</option>
-                {branches.map((b) => (
-                  <option key={b.id}>{b.name}</option>
-                ))}
+                <option>المقر الأول</option>
+                <option>المقر الثاني</option>
+                <option>المقر الثالث</option>
               </select>
             </label>
           )}
           {isSheikh && (
             <label>
               الحلقة
-              <select value={draft.halaqa} onChange={(e) => update("halaqa", e.target.value)}>
+              <select
+                value={draft.halaqa}
+                onChange={(event) => update("halaqa", event.target.value)}
+              >
                 <option value="">كل الحلقات</option>
-                {halaqat.map((h) => (
-                  <option key={h.id}>{h.name}</option>
-                ))}
+                <option>حلقة الإمام مالك</option>
+                <option>حلقة البخاري</option>
+                <option>حلقة النووي</option>
               </select>
             </label>
           )}
@@ -56,48 +67,65 @@ export function EntityFilterDrawer({ type, value, onClose, onApply }: EntityFilt
             <>
               <label>
                 الشيخ
-                <select value={draft.sheikh} onChange={(e) => update("sheikh", e.target.value)}>
+                <select
+                  value={draft.sheikh}
+                  onChange={(event) => update("sheikh", event.target.value)}
+                >
                   <option value="">كل الشيوخ</option>
-                  {sheikhs.map((s) => (
-                    <option key={s.personId}>{s.name}</option>
-                  ))}
+                  <option>الشيخ أحمد</option>
+                  <option>الشيخ ياسين</option>
+                  <option>الشيخ محمد</option>
                 </select>
               </label>
               <label>
                 المستوى
                 <select
                   value={draft.level || ""}
-                  onChange={(e) => update("level", e.target.value)}
+                  onChange={(event) => update("level", event.target.value)}
                 >
                   <option value="">كل المستويات</option>
-                  {LEVELS.map((level) => (
-                    <option key={level}>{level}</option>
-                  ))}
+                  <option>ابتدائي</option>
+                  <option>متوسط</option>
+                  <option>ثانوي</option>
+                  <option>جامعي</option>
                 </select>
               </label>
             </>
           )}
-          <label>
-            الحالة
-            <select value={draft.status} onChange={(e) => update("status", e.target.value)}>
-              <option value="">كل الحالات</option>
-              <option>نشط</option>
-              <option>{isHalaqa ? "متوقف" : "غير نشط"}</option>
-            </select>
-          </label>
+          {isBranch && (
+            <label>
+              الحالة
+              <select
+                value={draft.status}
+                onChange={(event) => update("status", event.target.value)}
+              >
+                <option value="">كل الحالات</option>
+                <option>نشط</option>
+                <option>غير نشط</option>
+              </select>
+            </label>
+          )}
         </div>
         <div className="drawer-footer">
           <button
             className="clear-filters"
             onClick={() => {
-              const empty: EntityFilters = { branch: "", halaqa: "", sheikh: "", status: "" }
+              const empty: EntityFilters = {
+                branch: "",
+                halaqa: "",
+                sheikh: "",
+                status: "",
+              }
               setDraft(empty)
               onApply(empty)
             }}
           >
             إعادة الضبط
           </button>
-          <button className="btn btn-primary" onClick={() => onApply(draft)}>
+          <button
+            className="btn btn-primary"
+            onClick={() => onApply(draft)}
+          >
             تطبيق الفلاتر
           </button>
         </div>

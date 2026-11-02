@@ -1,27 +1,18 @@
 import { useState } from "react"
 import { Icon, Button } from "@/components/ui"
-import { useAuth } from "@/services/AuthContext"
-import { errorMessage } from "@/services/api"
 
-export function LoginView() {
-  const { login, goToSetup } = useAuth()
+export interface LoginViewProps {
+  onLogin: () => void
+}
+
+export function LoginView({ onLogin }: LoginViewProps) {
   const [recovery, setRecovery] = useState(false)
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [submitting, setSubmitting] = useState(false)
+  const [username, setUsername] = useState("n.boualam")
+  const [password, setPassword] = useState("password")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (submitting) return
-    setError("")
-    setSubmitting(true)
-    try {
-      await login(username, password)
-    } catch (err) {
-      setError(errorMessage(err))
-      setSubmitting(false)
-    }
+    onLogin()
   }
 
   return (
@@ -46,13 +37,11 @@ export function LoginView() {
         </div>
         <form onSubmit={handleSubmit}>
           <label>
-            اسم المستخدم
+            البريد الإلكتروني أو اسم المستخدم
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="مثال: n.boualam"
-              autoComplete="username"
-              dir="ltr"
+              placeholder="name@djam3ya.dz"
               required
             />
           </label>
@@ -62,28 +51,13 @@ export function LoginView() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
               required
             />
           </label>
-          {error && (
-            <div className="info-alert" role="alert">
-              <Icon name="warning" />
-              <span>
-                <strong>تعذر تسجيل الدخول</strong>
-                <small>{error}</small>
-              </span>
-            </div>
-          )}
           <div className="login-options">
-            <button
-              type="button"
-              className="text-link"
-              onClick={goToSetup}
-              title="إذا كانت هذه أول مرة تقوم بتشغيل النظام وتريد إنشاء حساب المدير الأول"
-            >
-              إعداد النظام (أول استخدام)
-            </button>
+            <label>
+              <input type="checkbox" defaultChecked /> تذكرني
+            </label>
             <button type="button" onClick={() => setRecovery(!recovery)}>
               نسيت كلمة المرور؟
             </button>
@@ -94,15 +68,12 @@ export function LoginView() {
               <span>
                 <strong>استعادة الوصول</strong>
                 <small>
-                  تواصل مع المدير المركزي لإعادة ضبط كلمة المرور من صفحة حسابات
-                  المستخدمين.
+                  أدخل اسم المستخدم ثم تواصل مع مدير النطاق لإرسال رابط آمن.
                 </small>
               </span>
             </div>
           )}
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
-          </Button>
+          <Button type="submit">تسجيل الدخول</Button>
         </form>
         <small className="secure-note">
           <Icon name="shield" size={16} /> دخول محمي. لا تشارك بيانات حسابك مع
